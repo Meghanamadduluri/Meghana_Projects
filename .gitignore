@@ -1,0 +1,6 @@
+.env
+__pycache__/
+.streamlit/
+chroma_db/
+venv/
+.DS_Store

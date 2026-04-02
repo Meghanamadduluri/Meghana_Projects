@@ -1,0 +1,13 @@
+# Core API + RAG stack (align versions with your environment if needed)
+fastapi
+uvicorn[standard]
+python-dotenv
+sentence-transformers
+chromadb
+rank-bm25
+numpy
+pypdf
+pymupdf
+nltk
+google-genai
+streamlit
