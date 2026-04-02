@@ -25,6 +25,10 @@ class VectorStore:
 
     # Add a document to the vector store
     def add_document(self, doc_id: str, text: str, paper: str = "generic", chunk_id: int = 0):
+        text = (text or "").strip()
+        # Empty / whitespace-only chunks break BM25Okapi (ZeroDivisionError in _calc_idf when idf is empty).
+        if not text:
+            return
         embedding = self.model.encode(text).tolist()
         metadata = {
             "paper": paper,
@@ -37,17 +41,25 @@ class VectorStore:
             metadatas=[metadata]
         )
         # BM25 index: corpus[i], tokenized_corpus[i], metadata_store[i] must stay aligned.
-        token = text.lower().split()
+        token = text.lower().split() or ["_"]
         self.corpus.append(text)
         self.tokenized_corpus.append(token)
         self.metadata_store.append(metadata)
-        self.bm25 = BM25Okapi(self.tokenized_corpus)
+        try:
+            self.bm25 = BM25Okapi(self.tokenized_corpus)
+        except (ZeroDivisionError, ValueError):
+            # Corpus edge cases or library quirks (e.g. empty vocabulary); hybrid_search still has vector leg.
+            self.bm25 = None
 
     # Add multiple documents to the vector store
     def add_documents(self, documents: list, paper: str):
-        for chunk_id, text in enumerate(documents):
+        chunk_id = 0
+        for text in documents:
+            if not (text or "").strip():
+                continue
             doc_id = f"{paper}_{chunk_id}"
             self.add_document(doc_id, text, paper, chunk_id)
+            chunk_id += 1
 
     # Search for similar documents based on a query
     def search(self, query: str, n_results: int = 3):
