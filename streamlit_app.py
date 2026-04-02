@@ -15,6 +15,9 @@ import os
 import sys
 import time
 from pathlib import Path
+import nltk
+
+nltk.download('punkt_tab')
 
 from dotenv import load_dotenv
 
