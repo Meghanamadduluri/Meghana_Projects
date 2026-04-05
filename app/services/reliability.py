@@ -1,6 +1,3 @@
-"""Portfolio-level heuristics for retrieval confidence (no extra model calls)."""
-
-
 def retrieval_confidence_percent(sources: list[dict]) -> tuple[float, str]:
     """
     Map the strongest match (minimum distance from Chroma) to a 0–100 score and a label.

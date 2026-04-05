@@ -111,6 +111,7 @@ def main() -> None:
             if not sources:
                 st.warning("No relevant information found in uploaded documents (retrieval returned no chunks).")
                 logger.info("query=%r retrieval_ms=%.1f chunks=0", query, latency_retrieval * 1000)
+                st.caption(f"Latency — retrieval only: **{latency_retrieval * 1000:.0f} ms**")
             else:
                 conf_pct, conf_label = retrieval_confidence_percent(sources)
                 st.metric("Retrieval confidence (heuristic)", f"{conf_pct}%", delta=conf_label)
@@ -140,15 +141,24 @@ def main() -> None:
                     supported = False
                 latency_val = time.perf_counter() - t2
 
+                latency_total = latency_retrieval + latency_gen + latency_val
                 logger.info(
-                    "query=%r retrieval_ms=%.1f gen_ms=%.1f val_ms=%.1f n_sources=%d supported=%s",
+                    "query=%r retrieval_ms=%.1f gen_ms=%.1f val_ms=%.1f total_ms=%.1f n_sources=%d supported=%s",
                     query,
                     latency_retrieval * 1000,
                     latency_gen * 1000,
                     latency_val * 1000,
+                    latency_total * 1000,
                     len(sources),
                     supported,
                 )
+
+                st.subheader("Latency")
+                c0, c1, c2, c3 = st.columns(4)
+                c0.metric("End-to-end", f"{latency_total:.2f}s")
+                c1.metric("Retrieval", f"{latency_retrieval * 1000:.0f} ms")
+                c2.metric("Generation", f"{latency_gen * 1000:.0f} ms")
+                c3.metric("Validation", f"{latency_val * 1000:.0f} ms")
 
                 st.subheader("Answer")
                 if supported:
@@ -164,11 +174,6 @@ def main() -> None:
                     with st.expander(f"Source {i} — {s.get('paper', 'unknown')} (chunk {s.get('chunk_id', '?')})"):
                         st.caption(f"distance: {s.get('score', 0):.4f}")
                         st.write(s.get("text", ""))
-                st.caption(
-                    f"Retrieval ~{latency_retrieval * 1000:.0f} ms · "
-                    f"generation ~{latency_gen * 1000:.0f} ms · "
-                    f"validation ~{latency_val * 1000:.0f} ms"
-                )
 
     st.divider()
     st.subheader("Summarize a PDF")
@@ -193,8 +198,9 @@ def main() -> None:
                         st.error(f"Summarization failed: {e}")
                         logger.exception("summarize failed")
                     else:
+                        sum_latency = time.perf_counter() - t0
+                        st.metric("Summarization latency", f"{sum_latency:.2f}s")
                         st.write(summary)
-                        st.caption(f"~{(time.perf_counter() - t0) * 1000:.0f} ms")
             finally:
                 tmp.unlink(missing_ok=True)
 
